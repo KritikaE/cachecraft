@@ -1,239 +1,184 @@
 /*
+ * LRU Cache Visualizer
+ *
+ * Data structures:
+ * 1. Map      -> O(1) key lookup
+ * 2. Doubly Linked List -> maintains MRU to LRU order
+ *
+ * MRU = Most Recently Used
+ * LRU = Least Recently Used
+ */
 
-* LRU Cache Visualizer
-*
-* The cache uses two structures:
-*
-* 1. Map
-* key -> Node
-*
-* Provides O(1) lookup.
-*
-* 2. Doubly Linked List
-*
-* Maintains the order of recently used items.
-*
-* Head = Most Recently Used
-* Tail = Least Recently Used
-*
-* Together they allow GET and PUT in O(1).
-  */
 
-/* ================================
-Node
-================================ */
+/* =========================================
+   Node
+========================================= */
 
 class Node {
+    constructor(key, value) {
+        this.key = key;
+        this.value = value;
 
-```
-constructor(key, value) {
-
-    this.key = key;
-    this.value = value;
-
-    this.prev = null;
-    this.next = null;
-}
-```
-
+        this.prev = null;
+        this.next = null;
+    }
 }
 
-/* ================================
-LRU Cache
-================================ */
+
+/* =========================================
+   LRU Cache
+========================================= */
 
 class LRUCache {
 
-```
-constructor(capacity) {
+    constructor(capacity) {
 
-    this.capacity = capacity;
+        this.capacity = capacity;
+        this.map = new Map();
 
-    // HashMap equivalent in JavaScript.
-    this.map = new Map();
+        // Dummy head and tail nodes.
+        // head.next = Most Recently Used
+        // tail.prev = Least Recently Used
+        this.head = new Node(null, null);
+        this.tail = new Node(null, null);
 
-    // Dummy nodes simplify insertion/removal
-    // at the beginning and end of the list.
-    this.head = new Node(null, null);
-    this.tail = new Node(null, null);
-
-    this.head.next = this.tail;
-    this.tail.prev = this.head;
-}
-
-
-/*
- * Add a node immediately after the head.
- *
- * This makes the node the Most Recently Used item.
- */
-addToFront(node) {
-
-    node.next = this.head.next;
-    node.prev = this.head;
-
-    this.head.next.prev = node;
-    this.head.next = node;
-}
-
-
-/*
- * Remove a node from the linked list.
- *
- * Because the node stores both prev and next,
- * removal takes O(1).
- */
-removeNode(node) {
-
-    node.prev.next = node.next;
-    node.next.prev = node.prev;
-}
-
-
-/*
- * Move an existing node to the front.
- *
- * This means the item was recently accessed.
- */
-moveToFront(node) {
-
-    this.removeNode(node);
-    this.addToFront(node);
-}
-
-
-/*
- * Get a value from the cache.
- *
- * If the key exists:
- * - Count it as a cache hit.
- * - Move it to the front.
- *
- * If it does not exist:
- * - Count it as a cache miss.
- *
- * Time Complexity: O(1)
- */
-get(key) {
-
-    if (!this.map.has(key)) {
-
-        return null;
+        this.head.next = this.tail;
+        this.tail.prev = this.head;
     }
 
-    const node = this.map.get(key);
 
-    this.moveToFront(node);
+    // Adds a node immediately after the head.
+    addToFront(node) {
 
-    return node.value;
-}
+        node.next = this.head.next;
+        node.prev = this.head;
+
+        this.head.next.prev = node;
+        this.head.next = node;
+    }
 
 
-/*
- * Insert or update a key-value pair.
- *
- * If the key already exists:
- * - Update its value.
- * - Move it to the front.
- *
- * If the cache is full:
- * - Remove the least recently used node.
- *
- * Time Complexity: O(1)
- */
-put(key, value) {
+    // Removes a known node in O(1).
+    removeNode(node) {
 
-    // Key already exists.
-    if (this.map.has(key)) {
+        node.prev.next = node.next;
+        node.next.prev = node.prev;
+    }
+
+
+    // Moves an existing node to the MRU position.
+    moveToFront(node) {
+
+        this.removeNode(node);
+        this.addToFront(node);
+    }
+
+
+    // Returns the value associated with a key.
+    // Returns null if the key does not exist.
+    get(key) {
+
+        if (!this.map.has(key)) {
+            return null;
+        }
 
         const node = this.map.get(key);
 
-        node.value = value;
-
+        // Accessing an item makes it MRU.
         this.moveToFront(node);
 
+        return node.value;
+    }
+
+
+    // Inserts or updates a key-value pair.
+    put(key, value) {
+
+        // If key already exists, update it
+        // and move it to MRU.
+        if (this.map.has(key)) {
+
+            const node = this.map.get(key);
+
+            node.value = value;
+
+            this.moveToFront(node);
+
+            return {
+                updated: true,
+                evicted: null
+            };
+        }
+
+
+        // Create a new node.
+        const newNode = new Node(key, value);
+
+        this.map.set(key, newNode);
+
+        // New items are immediately MRU.
+        this.addToFront(newNode);
+
+
+        let evicted = null;
+
+
+        // If capacity is exceeded,
+        // remove the LRU node.
+        if (this.map.size > this.capacity) {
+
+            const lruNode = this.tail.prev;
+
+            this.removeNode(lruNode);
+
+            this.map.delete(lruNode.key);
+
+            evicted = {
+                key: lruNode.key,
+                value: lruNode.value
+            };
+        }
+
+
         return {
-            updated: true,
-            evicted: null
+            updated: false,
+            evicted: evicted
         };
     }
 
 
-    // Create a new node.
-    const newNode = new Node(key, value);
+    // Returns nodes from MRU -> LRU.
+    getNodes() {
 
-    this.map.set(key, newNode);
+        const nodes = [];
 
-    this.addToFront(newNode);
+        let current = this.head.next;
 
+        while (current !== this.tail) {
 
-    let evicted = null;
+            nodes.push(current);
 
+            current = current.next;
+        }
 
-    /*
-     * Cache exceeded its capacity.
-     *
-     * tail.prev is the least recently used node.
-     */
-    if (this.map.size > this.capacity) {
-
-        const lruNode = this.tail.prev;
-
-        this.removeNode(lruNode);
-
-        this.map.delete(lruNode.key);
-
-        evicted = {
-            key: lruNode.key,
-            value: lruNode.value
-        };
+        return nodes;
     }
 
 
-    return {
-        updated: false,
-        evicted: evicted
-    };
-}
+    // Clears the entire cache.
+    clear() {
 
+        this.map.clear();
 
-/*
- * Return all cache nodes from MRU → LRU.
- */
-getNodes() {
-
-    const nodes = [];
-
-    let current = this.head.next;
-
-    while (current !== this.tail) {
-
-        nodes.push(current);
-
-        current = current.next;
+        this.head.next = this.tail;
+        this.tail.prev = this.head;
     }
-
-    return nodes;
 }
 
 
-/*
- * Clear the cache.
- */
-clear() {
-
-    this.map.clear();
-
-    this.head.next = this.tail;
-    this.tail.prev = this.head;
-}
-```
-
-}
-
-/* ================================
-Application State
-================================ */
+/* =========================================
+   Application State
+========================================= */
 
 let cache = new LRUCache(3);
 
@@ -241,9 +186,10 @@ let hits = 0;
 let misses = 0;
 let evictions = 0;
 
-/* ================================
-DOM Elements
-================================ */
+
+/* =========================================
+   DOM Elements
+========================================= */
 
 const capacityInput = document.getElementById("capacity");
 const keyInput = document.getElementById("key");
@@ -256,163 +202,161 @@ const resetButton = document.getElementById("resetBtn");
 const cacheContainer = document.getElementById("cacheContainer");
 const cacheSize = document.getElementById("cacheSize");
 
-const status = document.getElementById("status");
+const statusElement = document.getElementById("status");
 
 const hitsElement = document.getElementById("hits");
 const missesElement = document.getElementById("misses");
 const evictionsElement = document.getElementById("evictions");
 const hitRateElement = document.getElementById("hitRate");
 
-const history = document.getElementById("history");
+const historyList = document.getElementById("history");
 
-/* ================================
-Render Cache
-================================ */
+
+/* =========================================
+   Render Cache
+========================================= */
 
 function renderCache() {
 
-```
-const nodes = cache.getNodes();
+    const nodes = cache.getNodes();
 
-cacheContainer.innerHTML = "";
-
-
-if (nodes.length === 0) {
-
-    cacheContainer.innerHTML =
-        '<p class="empty">Cache is empty</p>';
-
-} else {
-
-    nodes.forEach((node, index) => {
-
-        const nodeElement = document.createElement("div");
-
-        nodeElement.className = "node";
-
-        nodeElement.innerHTML = `
-            <strong>${node.key}</strong>
-            <span>${node.value}</span>
-        `;
-
-        cacheContainer.appendChild(nodeElement);
+    cacheContainer.innerHTML = "";
 
 
-        // Add arrows between nodes.
-        if (index < nodes.length - 1) {
+    if (nodes.length === 0) {
 
-            const arrow = document.createElement("div");
+        cacheContainer.innerHTML =
+            '<p class="empty">Cache is empty</p>';
 
-            arrow.className = "arrow";
+    } else {
 
-            arrow.textContent = "↔";
+        nodes.forEach((node, index) => {
 
-            cacheContainer.appendChild(arrow);
-        }
-    });
+            const nodeElement =
+                document.createElement("div");
+
+            nodeElement.className = "node";
+
+            nodeElement.innerHTML = `
+                <strong>${node.key}</strong>
+                <span>${node.value}</span>
+            `;
+
+            cacheContainer.appendChild(nodeElement);
+
+
+            if (index < nodes.length - 1) {
+
+                const arrow =
+                    document.createElement("div");
+
+                arrow.className = "arrow";
+                arrow.textContent = "↔";
+
+                cacheContainer.appendChild(arrow);
+            }
+        });
+    }
+
+
+    cacheSize.textContent =
+        `${nodes.length} / ${cache.capacity}`;
 }
 
 
-cacheSize.textContent =
-    `${nodes.length} / ${cache.capacity}`;
-```
-
-}
-
-/* ================================
-Update Statistics
-================================ */
+/* =========================================
+   Statistics
+========================================= */
 
 function updateStats() {
 
-```
-hitsElement.textContent = hits;
+    hitsElement.textContent = hits;
+    missesElement.textContent = misses;
+    evictionsElement.textContent = evictions;
 
-missesElement.textContent = misses;
+    const total = hits + misses;
 
-evictionsElement.textContent = evictions;
+    const rate =
+        total === 0
+            ? 0
+            : ((hits / total) * 100).toFixed(1);
 
-
-const total = hits + misses;
-
-const rate =
-    total === 0
-        ? 0
-        : ((hits / total) * 100).toFixed(1);
-
-hitRateElement.textContent = `${rate}%`;
-```
-
+    hitRateElement.textContent = `${rate}%`;
 }
 
-/* ================================
-Add Operation to History
-================================ */
+
+/* =========================================
+   Operation History
+========================================= */
 
 function addHistory(message) {
 
-```
-if (
-    history.children.length === 1 &&
-    history.children[0].textContent === "No operations yet."
-) {
+    if (
+        historyList.children.length === 1 &&
+        historyList.children[0].textContent ===
+            "No operations yet."
+    ) {
+        historyList.innerHTML = "";
+    }
 
-    history.innerHTML = "";
+
+    const item = document.createElement("li");
+
+    item.textContent = message;
+
+    historyList.prepend(item);
 }
 
 
-const item = document.createElement("li");
+/* =========================================
+   PUT
+========================================= */
 
-item.textContent = message;
+putButton.addEventListener("click", function () {
 
-history.prepend(item);
-```
-
-}
-
-/* ================================
-PUT
-================================ */
-
-putButton.addEventListener("click", () => {
-
-```
-const key = keyInput.value.trim();
-
-const value = valueInput.value.trim();
+    const keyText = keyInput.value.trim();
+    const value = valueInput.value.trim();
 
 
-if (key === "" || value === "") {
+    if (keyText === "" || value === "") {
 
-    status.textContent =
-        "Please enter both a key and a value.";
+        statusElement.textContent =
+            "Please enter both a key and a value.";
 
-    return;
-}
-
-
-const numericKey = Number(key);
-
-const result = cache.put(numericKey, value);
+        return;
+    }
 
 
-if (result.updated) {
+    const key = Number(keyText);
 
-    status.textContent =
-        `PUT(${key}, ${value}) → Updated existing key and moved it to MRU.`;
 
-    addHistory(
-        `PUT(${key}, ${value}) → UPDATED`
-    );
+    if (Number.isNaN(key)) {
 
-} else {
+        statusElement.textContent =
+            "Key must be a number.";
 
-    if (result.evicted) {
+        return;
+    }
+
+
+    const result = cache.put(key, value);
+
+
+    if (result.updated) {
+
+        statusElement.textContent =
+            `PUT(${key}, ${value}) → Updated and moved to MRU.`;
+
+        addHistory(
+            `PUT(${key}, ${value}) → UPDATED`
+        );
+
+    } else if (result.evicted) {
 
         evictions++;
 
-        status.textContent =
-            `PUT(${key}, ${value}) → Added to MRU. Evicted ${result.evicted.key}:${result.evicted.value}.`;
+        statusElement.textContent =
+            `PUT(${key}, ${value}) → Evicted ${result.evicted.key}:${result.evicted.value}.`;
 
         addHistory(
             `PUT(${key}, ${value}) → EVICTED ${result.evicted.key}:${result.evicted.value}`
@@ -420,124 +364,127 @@ if (result.updated) {
 
     } else {
 
-        status.textContent =
+        statusElement.textContent =
             `PUT(${key}, ${value}) → Added to MRU.`;
 
         addHistory(
             `PUT(${key}, ${value}) → ADDED`
         );
     }
-}
 
 
-renderCache();
-
-updateStats();
-```
-
+    renderCache();
+    updateStats();
 });
 
-/* ================================
-GET
-================================ */
 
-getButton.addEventListener("click", () => {
+/* =========================================
+   GET
+========================================= */
 
-```
-const key = keyInput.value.trim();
+getButton.addEventListener("click", function () {
 
-
-if (key === "") {
-
-    status.textContent =
-        "Please enter a key.";
-
-    return;
-}
+    const keyText = keyInput.value.trim();
 
 
-const numericKey = Number(key);
+    if (keyText === "") {
 
-const value = cache.get(numericKey);
+        statusElement.textContent =
+            "Please enter a key.";
 
-
-if (value === null) {
-
-    misses++;
-
-    status.textContent =
-        `GET(${key}) → CACHE MISS`;
-
-    addHistory(
-        `GET(${key}) → MISS`
-    );
-
-} else {
-
-    hits++;
-
-    status.textContent =
-        `GET(${key}) → CACHE HIT. Value = ${value}. Moved to MRU.`;
-
-    addHistory(
-        `GET(${key}) → HIT (${value})`
-    );
-}
+        return;
+    }
 
 
-renderCache();
+    const key = Number(keyText);
 
-updateStats();
-```
 
+    if (Number.isNaN(key)) {
+
+        statusElement.textContent =
+            "Key must be a number.";
+
+        return;
+    }
+
+
+    const value = cache.get(key);
+
+
+    if (value === null) {
+
+        misses++;
+
+        statusElement.textContent =
+            `GET(${key}) → CACHE MISS`;
+
+        addHistory(
+            `GET(${key}) → MISS`
+        );
+
+    } else {
+
+        hits++;
+
+        statusElement.textContent =
+            `GET(${key}) → CACHE HIT. Value = ${value}.`;
+
+        addHistory(
+            `GET(${key}) → HIT (${value})`
+        );
+    }
+
+
+    renderCache();
+    updateStats();
 });
 
-/* ================================
-RESET
-================================ */
 
-resetButton.addEventListener("click", () => {
+/* =========================================
+   RESET
+========================================= */
 
-```
-const capacity =
-    parseInt(capacityInput.value);
+resetButton.addEventListener("click", function () {
 
-
-if (capacity < 1 || isNaN(capacity)) {
-
-    status.textContent =
-        "Capacity must be at least 1.";
-
-    return;
-}
+    const capacity =
+        parseInt(capacityInput.value);
 
 
-cache = new LRUCache(capacity);
+    if (
+        Number.isNaN(capacity) ||
+        capacity < 1
+    ) {
 
-hits = 0;
-misses = 0;
-evictions = 0;
+        statusElement.textContent =
+            "Capacity must be at least 1.";
 
-
-history.innerHTML =
-    "<li>No operations yet.</li>";
-
-
-status.textContent =
-    "Cache has been reset.";
+        return;
+    }
 
 
-renderCache();
+    cache = new LRUCache(capacity);
 
-updateStats();
-```
+    hits = 0;
+    misses = 0;
+    evictions = 0;
 
+
+    historyList.innerHTML =
+        "<li>No operations yet.</li>";
+
+
+    statusElement.textContent =
+        "Cache has been reset.";
+
+
+    renderCache();
+    updateStats();
 });
 
-/* ================================
-Initial Render
-================================ */
+
+/* =========================================
+   Initial Setup
+========================================= */
 
 renderCache();
-
 updateStats();
