@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+```
+<title>LRU Cache Visualizer | CacheCraft</title>
+
+<link rel="stylesheet" href="style.css">
+```
+
+</head>
+
+<body>
+
+```
+<header>
+    <h1>LRU Cache Visualizer</h1>
+    <p>See how a Least Recently Used cache works in real time.</p>
+</header>
+
+<main>
+
+    <!-- Controls -->
+    <section class="controls">
+
+        <div class="input-group">
+            <label for="capacity">Cache Capacity</label>
+            <input type="number" id="capacity" min="1" value="3">
+        </div>
+
+        <div class="input-group">
+            <label for="key">Key</label>
+            <input type="number" id="key" placeholder="Enter key">
+        </div>
+
+        <div class="input-group">
+            <label for="value">Value</label>
+            <input type="text" id="value" placeholder="Enter value">
+        </div>
+
+        <div class="buttons">
+            <button id="putBtn">PUT</button>
+            <button id="getBtn">GET</button>
+            <button id="resetBtn">RESET</button>
+        </div>
+
+    </section>
+
+
+    <!-- Cache Visualization -->
+    <section class="card">
+
+        <div class="section-title">
+            <h2>Cache</h2>
+            <span id="cacheSize">0 / 3</span>
+        </div>
+
+        <div class="labels">
+            <span>MRU</span>
+            <span>LRU</span>
+        </div>
+
+        <div id="cacheContainer" class="cache-container">
+            <p class="empty">Cache is empty</p>
+        </div>
+
+    </section>
+
+
+    <!-- Status -->
+    <section class="card status-card">
+
+        <h2>Operation</h2>
+
+        <div id="status">
+            Perform a GET or PUT operation.
+        </div>
+
+    </section>
+
+
+    <!-- Statistics -->
+    <section class="card">
+
+        <h2>Cache Statistics</h2>
+
+        <div class="stats">
+
+            <div class="stat">
+                <span>Hits</span>
+                <strong id="hits">0</strong>
+            </div>
+
+            <div class="stat">
+                <span>Misses</span>
+                <strong id="misses">0</strong>
+            </div>
+
+            <div class="stat">
+                <span>Evictions</span>
+                <strong id="evictions">0</strong>
+            </div>
+
+            <div class="stat">
+                <span>Hit Rate</span>
+                <strong id="hitRate">0%</strong>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- Operation History -->
+    <section class="card">
+
+        <h2>Operation History</h2>
+
+        <ul id="history">
+            <li>No operations yet.</li>
+        </ul>
+
+    </section>
+
+</main>
+
+
+<footer>
+    <p>CacheCraft • LRU Cache Visualizer</p>
+</footer>
+
+<script src="script.js"></script>
+```
+
+</body>
+</html>
