@@ -1,59 +1,47 @@
-# ⚡ CacheCraft
+# CacheCraft
 
-> **Learn caching. Build an LRU cache. Understand how real systems stay fast.**
+A simple exploration of **caching concepts and LRU Cache implementation**.
+
+This repository covers the fundamentals of caching, popular caching systems like Redis and Memcached, cache eviction strategies, and the implementation of an LRU Cache using a Circular Doubly Linked List and HashMap.
 
 ---
 
-## 📚 What You'll Learn
+## Topics Covered
 
-This repository covers:
+### 1. Caching
 
-### 1. What is Caching?
+Understanding what caching is and why it is used.
 
-Understand caching from both a **computer organization** and **web/application** perspective.
-
-* What is a cache?
-* Why is caching needed?
-* Cache vs main memory/storage
-* CPU cache: L1, L2, L3
-* Web browser caching
-* HTTP caching
+* What is caching?
+* Why do we need caching?
+* Cache in Computer Organization
+* CPU caches: L1, L2, and L3
+* Web page and browser caching
 * Application-level caching
-* Database caching
-* Real-world examples
-* Benefits and limitations of caching
-
-📖 [Read: Caching Fundamentals](notes/01-caching.md)
+* Cache hits and cache misses
+* Advantages and limitations of caching
 
 ---
 
-### 2. Redis & Memcached
+### 2. Redis and Memcached
 
-Introduction to two popular in-memory caching technologies.
+An introduction to two widely used in-memory data stores.
 
 * What is Redis?
 * What is Memcached?
 * How in-memory caching works
 * Redis vs Memcached
-* Data structures supported by Redis
-* Persistence
-* Distributed caching
-* When to choose Redis
-* When to choose Memcached
-
-📖 [Read: Redis & Memcached](notes/02-redis-and-memcached.md)
+* Advantages and limitations
+* When to use Redis
+* When to use Memcached
 
 ---
 
 ### 3. Cache Eviction Strategies
 
-A cache has limited memory.
+Caches have limited storage. When the cache becomes full, some existing data needs to be removed.
 
-So the important question becomes:
-
-> **When the cache is full, which item should be removed?**
-
-This section covers:
+This section explores:
 
 * LRU — Least Recently Used
 * LFU — Least Frequently Used
@@ -61,227 +49,193 @@ This section covers:
 * MRU — Most Recently Used
 * Random Replacement
 * TTL-based expiration
-* Comparison of eviction strategies
-* When to use which strategy
-* Real-world use cases
 
-📖 [Read: Cache Eviction Strategies](notes/03-cache-eviction-strategies.md)
+It also discusses **why eviction is necessary and when different strategies are useful**.
 
 ---
 
-## 🧠 LRU Cache Implementation
+### 4. LRU Cache Implementation
 
-One of the most important cache implementations for **DSA + interviews** is the **LRU Cache**.
-
-The target operations are:
+An LRU Cache is implemented using:
 
 ```text
-get(key)  → O(1)
-put(key, value) → O(1)
+HashMap + Circular Doubly Linked List
 ```
 
-To achieve this, we combine:
+The HashMap provides fast lookup:
 
 ```text
-HashMap
-   +
-Circular Doubly Linked List
+key → Node
 ```
 
-### Why?
-
-The **HashMap** provides:
-
-```text
-key → node
-```
-
-allowing us to find an item in **O(1)**.
-
-The **Doubly Linked List** maintains the order of usage:
+The Circular Doubly Linked List maintains the order of usage:
 
 ```text
 Most Recently Used
         ↓
-      [A]
-       ↕
-      [B]
-       ↕
-      [C]
-        ↓
-Least Recently Used
+      [A] ↔ [B] ↔ [C]
+                    ↑
+              Least Recently Used
 ```
 
-When the cache is full, the least recently used node can be removed efficiently.
-
-### Core Design
-
-```text
-                ┌──────────────┐
-                │   HashMap    │
-                │ key → Node   │
-                └──────┬───────┘
-                       │
-                       ▼
-              ┌─────────────────┐
-              │ Circular DLL    │
-              │                 │
-              │ A ↔ B ↔ C ↔ ...│
-              └─────────────────┘
-```
-
-### Complexity
-
-| Operation          | Time |
-| ------------------ | ---: |
-| `get()`            | O(1) |
-| `put()`            | O(1) |
-| Remove LRU         | O(1) |
-| Move node to front | O(1) |
-| Search             | O(1) |
-
-📁 [View LRU Cache Implementation](lru-cache/LRUCache.java)
+This combination allows both `get()` and `put()` to operate in **O(1)** time.
 
 ---
 
-## 🔄 Why Circular Doubly Linked List?
+## LRU Cache Design
 
-A **Circular Doubly Linked List (CDLL)** is particularly useful because an LRU cache constantly needs to:
+### Main Components
 
-1. Move recently accessed nodes to the front.
-2. Remove the least recently used node.
-3. Insert new nodes.
-4. Remove arbitrary nodes.
+**HashMap**
 
-A DLL supports these operations efficiently because every node has:
+Stores the mapping between a key and its corresponding node.
+
+```text
+HashMap<Key, Node>
+```
+
+**Circular Doubly Linked List**
+
+Maintains the order of recently used elements.
+
+```text
+        ┌─────────────────────┐
+        ↓                     │
+      [A] ↔ [B] ↔ [C] ↔ [D] ─┘
+       ↑
+      Head
+```
+
+The most recently used element is maintained near the head, while the least recently used element is at the opposite end.
+
+---
+
+## UML Class Diagram
+
+The LRU Cache consists mainly of two classes:
+
+```text
+┌─────────────────────────────┐
+│          LRUCache           │
+├─────────────────────────────┤
+│ - capacity : int            │
+│ - map : HashMap             │
+│ - head : Node               │
+├─────────────────────────────┤
+│ + get(key) : int            │
+│ + put(key, value) : void    │
+│ - addNode(node) : void      │
+│ - removeNode(node) : void   │
+│ - moveToFront(node) : void  │
+│ - removeLRU() : Node        │
+└──────────────┬──────────────┘
+               │
+               │ uses
+               ▼
+┌─────────────────────────────┐
+│            Node             │
+├─────────────────────────────┤
+│ - key : int                 │
+│ - value : int               │
+│ - prev : Node               │
+│ - next : Node               │
+└─────────────────────────────┘
+```
+
+---
+
+## Why a Circular Doubly Linked List?
+
+An LRU Cache frequently needs to:
+
+1. Add a new node.
+2. Remove an existing node.
+3. Move a recently accessed node to the front.
+4. Remove the least recently used node.
+
+A doubly linked list makes these operations efficient because each node contains both:
 
 ```text
 prev ← Node → next
 ```
 
-The circular structure also eliminates special cases involving `null` at the ends.
+The circular structure also connects the two ends of the list, reducing special-case handling for insertion and deletion.
 
 ---
 
-## 📊 Circular DLL vs Array vs Singly Linked List
+## Why Not an Array?
 
-| Feature                        | Array     | Singly LL    | Circular DLL |
-| ------------------------------ | --------- | ------------ | ------------ |
-| Random access                  | ✅ O(1)    | ❌ O(n)       | ❌ O(n)       |
-| Insert/remove arbitrary node   | ❌ O(n)    | ⚠️ O(1)*     | ✅ O(1)       |
-| Delete node when node is known | ❌         | ⚠️ Difficult | ✅ O(1)       |
-| Move node to front             | ❌         | ⚠️ Difficult | ✅ O(1)       |
-| Bidirectional traversal        | ❌         | ❌            | ✅            |
-| Dynamic size                   | ❌/limited | ✅            | ✅            |
-| Ideal for LRU                  | ❌         | ❌            | ✅            |
+Arrays provide efficient random access:
 
-* Assuming the required predecessor node is already known.
+```text
+array[index] → O(1)
+```
 
-The key reason for choosing a **Doubly Linked List** is that an LRU cache needs to remove and reposition nodes frequently.
+However, moving or removing elements from the middle requires shifting other elements.
+
+For an LRU Cache, nodes are constantly being moved and removed, making an array inefficient for this purpose.
 
 ---
 
-## 🏗️ UML Class Diagram
+## Why Not a Singly Linked List?
 
-The LRU cache can be modeled using two main components:
+A singly linked list only stores:
 
 ```text
-┌──────────────────────────┐
-│        LRUCache          │
-├──────────────────────────┤
-│ - capacity: int          │
-│ - map: HashMap           │
-│ - head: Node             │
-├──────────────────────────┤
-│ + get(key): int          │
-│ + put(key,value): void   │
-│ - addNode(node): void    │
-│ - removeNode(node): void │
-│ - moveToFront(node)      │
-│ - removeLRU(): Node      │
-└────────────┬─────────────┘
-             │
-             │ uses
-             ▼
-┌──────────────────────────┐
-│          Node            │
-├──────────────────────────┤
-│ - key: int               │
-│ - value: int             │
-│ - prev: Node             │
-│ - next: Node             │
-└──────────────────────────┘
+Node → next
 ```
 
-The actual UML diagram is available in:
+If we want to remove a node, we generally need access to its previous node.
 
-📁 [`uml/lru-cache-class-diagram.png`](uml/lru-cache-class-diagram.png)
+A doubly linked list directly provides:
+
+```text
+prev ← Node → next
+```
+
+So a known node can be removed in **O(1)** time.
+
+This is exactly what an LRU Cache needs.
 
 ---
 
-## 🌐 Real-World Applications
+## Complexity
 
-Caching appears everywhere in modern computing.
+| Operation   | Time Complexity |
+| ----------- | --------------- |
+| `get()`     | O(1)            |
+| `put()`     | O(1)            |
+| Insert Node | O(1)            |
+| Remove Node | O(1)            |
+| Move Node   | O(1)            |
+| Find Key    | O(1)            |
 
-### Computer Organization
-
-```text
-CPU
- ↓
-L1 Cache
- ↓
-L2 Cache
- ↓
-L3 Cache
- ↓
-RAM
- ↓
-Storage
-```
-
-The closer the data is to the CPU, the faster it can usually be accessed.
-
----
-
-### Web Applications
-
-A typical request may look like:
+Space complexity:
 
 ```text
-User
- ↓
-Browser Cache
- ↓
-CDN
- ↓
-Application Server
- ↓
-Redis / Memcached
- ↓
-Database
-```
-
-Caching frequently accessed data avoids repeatedly performing expensive operations.
-
-For example:
-
-```text
-GET /user/123
-```
-
-Instead of querying the database every time:
-
-```text
-Request
-   ↓
-Cache?
- ┌─┴─┐
-Hit Miss
- │    │
- ↓    ↓
-Data  DB
-      ↓
-    Cache
+O(capacity)
 ```
 
 ---
+
+## Repository Structure
+
+```text
+cachecraft/
+│
+├── README.md
+│
+├── notes/
+│   ├── caching.md
+│   ├── redis-memcached.md
+│   └── eviction-strategies.md
+│
+├── lru-cache/
+│   └── LRUCache.java
+│
+└── uml/
+    └── lru-cache-class-diagram.png
+```
+
+---
+
