@@ -4,6 +4,12 @@ A simple exploration of **caching concepts and LRU Cache implementation**.
 
 This repository covers the fundamentals of caching, popular caching systems like Redis and Memcached, cache eviction strategies, and the implementation of an LRU Cache using a Circular Doubly Linked List and HashMap.
 
+## 🌐 Interactive LRU Cache Visualizer
+
+A web-based visualizer is included to demonstrate LRU Cache operations interactively. Users can perform `GET`, `PUT`, and `RESET` operations while observing the cache order, MRU/LRU positions, evictions, hit/miss statistics, and operation history in real time.
+
+👉 **[Try the LRU Cache Visualizer](https://kritikae.github.io/cachecraft/)**
+
 ---
 
 ## Topics Covered
